@@ -19,9 +19,14 @@ const style: maplibregl.StyleSpecification = {
   sources: {
     osm: {
       type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
       tileSize: 256,
-      attribution: '&copy; OpenStreetMap contributors',
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     },
   },
   layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
@@ -52,6 +57,13 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
     })
     mapRef.current = map
 
+    map.on('error', (e) => {
+      console.error('MapLibre error:', e.error)
+    })
+
+    // レイアウト確定後にサイズを再計算（初期サイズが0になる場合への対策）
+    requestAnimationFrame(() => map.resize())
+
     map.on('load', () => {
       // ルート全体（lineMetrics有効）をソースとして追加し、傾斜に応じたグラデーションで描画
       map.addSource(ROUTE_SOURCE, {
@@ -60,7 +72,7 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
         data: {
           type: 'Feature',
           properties: {},
-          geometry: { type: 'LineString', coordinates: [coords[0]] },
+          geometry: { type: 'LineString', coordinates: [coords[0], coords[0]] },
         },
       })
 
@@ -140,6 +152,8 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
             break
           }
         }
+
+        if (animatedCoords.length < 2) animatedCoords.push(coords[0])
 
         const source = map.getSource(ROUTE_SOURCE) as maplibregl.GeoJSONSource | undefined
         source?.setData({
