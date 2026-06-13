@@ -58,11 +58,12 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
     mapRef.current = map
 
     map.on('error', (e) => {
-      console.error('MapLibre error:', e.error)
+      console.error('[Pochette] MapLibre error:', e.error)
     })
 
-    // レイアウト確定後にサイズを再計算（初期サイズが0になる場合への対策）
-    requestAnimationFrame(() => map.resize())
+    // コンテナのサイズ変化（flexレイアウト確定など）に追従してリサイズ
+    const resizeObserver = new ResizeObserver(() => map.resize())
+    resizeObserver.observe(mapDivRef.current)
 
     map.on('load', () => {
       // ルート全体（lineMetrics有効）をソースとして追加し、傾斜に応じたグラデーションで描画
@@ -168,6 +169,7 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
     })
 
     return () => {
+      resizeObserver.disconnect()
       map.remove()
       mapRef.current = null
     }
@@ -203,5 +205,11 @@ export default function MapContainer({ points, segments, hoveredIndex }: Props) 
     else map.once('load', update)
   }, [hoveredIndex, points])
 
-  return <div ref={mapDivRef} className="absolute inset-0" />
+  return (
+    <div
+      ref={mapDivRef}
+      className="absolute inset-0"
+      style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+    />
+  )
 }
